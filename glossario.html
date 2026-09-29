@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Biblioteca Híbrida — Câmera, GPS, WhatsApp, SMS</title>
+    <style>
+        /* ============================================================
+           RESET E CSS BASE
+           ============================================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ============================================================
+           BOTÃO VOLTAR AO TOPO (FAB)
+           ============================================================ */
+        .btn-topo {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 8px 22px rgba(168,85,247,0.5);
+            transition: all 0.25s;
+            z-index: 1500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-topo:hover {
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 12px 28px rgba(168,85,247,0.65);
+        }
+        .btn-topo.oculto {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.5);
+        }
+
+        /* ============================================================
+           SIDEBAR
+           ============================================================ */
+        .sidebar {
+            width: 300px;
+            background: #1e293b;
+            padding: 20px 14px;
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            left: 0;
+            top: 0;
+            border-right: 1px solid #334155;
+            z-index: 100;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .sidebar-sub {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .categoria-titulo {
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 1.5px;
+            margin: 18px 0 8px;
+            padding-left: 8px;
+            border-left: 3px solid #a855f7;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            margin: 2px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            color: #cbd5e1;
+            transition: all 0.15s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .sidebar-item:hover {
+            background: #334155;
+            color: white;
+        }
+
+        .sidebar-item.ativo {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            font-weight: 700;
+        }
+
+        .sidebar-item .icone { font-size: 1rem; }
+
+        /* ============================================================
+           CONTEÚDO PRINCIPAL
+           ============================================================ */
+        .main {
+            margin-left: 300px;
+            flex: 1;
+            padding: 26px 30px;
+            min-height: 100vh;
+            scroll-behavior: smooth;
+        }
+
+        .main-header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .main-header p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .main-header .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .meta-badge {
+            background: #334155;
+            color: #cbd5e1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .meta-badge.responsive {
+            background: #065f46;
+            color: #86efac;
+        }
+
+        .meta-badge.categoria {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .meta-badge.mobile {
+            background: #0369a1;
+            color: #7dd3fc;
+        }
+
+        /* ============================================================
+           PREVIEW
+           ============================================================ */
+        .preview-wrapper {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .preview-header {
+            background: #1e293b;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        .preview-header .ponto {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        .ponto.vermelho { background: #ef4444; }
+        .ponto.amarelo { background: #f59e0b; }
+        .ponto.verde { background: #10b981; }
+
+        .preview-titulo {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 560px;
+            border: none;
+            background: white;
+            display: block;
+        }
+
+        /* ============================================================
+           BOTÃO ABRIR EM NOVA ABA
+           ============================================================ */
+        .btn-nova-aba {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.15s;
+        }
+        .btn-nova-aba:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16,185,129,0.4);
+        }
+
+        /* ============================================================
+           ABAS
+           ============================================================ */
+        .abas {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 0;
+            border-bottom: 2px solid #334155;
+            flex-wrap: wrap;
+        }
+
+        .aba {
+            padding: 10px 18px;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .aba:hover { color: #cbd5e1; background: #1e293b; }
+        .aba.ativa { color: #a855f7; border-bottom-color: #a855f7; }
+
+        .bloco-codigo {
+            display: none;
+            position: relative;
+            background: #020617;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .bloco-codigo.ativo { display: block; }
+
+        .bloco-codigo .btn-copiar {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 700;
+            font-family: inherit;
+            z-index: 2;
+        }
+
+        .bloco-codigo .btn-copiar:hover { background: #059669; }
+
+        .bloco-codigo pre {
+            padding: 18px 20px;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            white-space: pre;
+            max-height: 460px;
+        }
+
+        /* ============================================================
+           INFO BOX
+           ============================================================ */
+        .info-box {
+            background: #1e293b;
+            border-left: 4px solid #a855f7;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+
+        .info-box strong { color: #c084fc; }
+        .info-box code {
+            background: #334155;
+            color: #fbbf24;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.82rem;
+        }
+
+        .info-box.aviso {
+            background: #422006;
+            border-left-color: #f59e0b;
+            color: #fde68a;
+        }
+        .info-box.aviso strong { color: #fbbf24; }
+
+        /* ============================================================
+           BOTÃO MENU MOBILE
+           ============================================================ */
+        .btn-menu-mobile {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 200;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        /* ============================================================
+           RESPONSIVO
+           ============================================================ */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.aberta { transform: translateX(0); }
+            .main { margin-left: 0; padding: 70px 16px 26px; }
+            .btn-menu-mobile { display: block; }
+            .main-header h1 { font-size: 1.4rem; }
+            .preview-iframe { height: 480px; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="btn-menu-mobile" onclick="toggleMenu()" aria-label="Abrir Menu">☰</button>
+<button class="btn-topo oculto" id="btnTopo" onclick="voltarAoInicioPrincipal()" title="Voltar ao início">⬆️</button>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">📱 Biblioteca Híbrida</div>
+    <div class="sidebar-sub">Web APIs para Mobile</div>
+    <div id="sidebarNav"></div>
+</aside>
+
+<main class="main" id="inicioPrincipal">
+    <div id="conteudoPrincipal"></div>
+</main>
+
+<script>
+    /* ============================================================
+       BIBLIOTECA DE COMPONENTES HÍBRIDOS
+       ============================================================ */
+    const COMPONENTES = [
+        // ==================== 📷 CÂMERA ====================
+        {
+            id: 'camera-captura',
+            nome: 'Captura de Foto (Câmera)',
+            icone: '📷',
+            categoria: '📷 Câmera',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Use <code>accept="image/*"</code> e <code>capture="environment"</code> para abrir a câmera traseira no celular. Troque <code>environment</code> por <code>user</code> para a câmera frontal. O preview usa <code>FileReader</code> para exibir a imagem localmente.',
+            html: `<div class="card-camera">
+    <h2>📷 Tirar Foto</h2>
+    <p>Toque no botão para abrir a câmera do celular.</p>
+
+    <div class="preview-foto" id="previewFoto">
+        <span>Nenhuma foto capturada ainda</span>
+    </div>
+
+    <label class="btn-camera">
+        📸 Abrir Câmera Traseira
+        <input type="file" accept="image/*" capture="environment" onchange="processarFoto(this)">
+    </label>
+
+    <div class="grupo-botoes">
+        <label class="btn-secundario">
+            🤳 Selfie
+            <input type="file" accept="image/*" capture="user" onchange="processarFoto(this)">
+        </label>
+        <label class="btn-secundario">
+            🖼️ Galeria
+            <input type="file" accept="image/*" onchange="processarFoto(this)">
+        </label>
+    </div>
+
+    <div class="grupo-botoes" id="acoesCamera" style="display:none;">
+        <button class="btn-baixar" onclick="baixarFoto()">💾 Baixar Foto</button>
+        <button class="btn-limpar" onclick="limparFoto()">🗑️ Limpar</button>
+    </div>
+</div>`,
+            css: `.card-camera {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    text-align: center;
+}
+.card-camera h2 { color: #7c3aed; margin-bottom: 6px; }
+.card-camera > p { color: #64748b; font-size: 0.9rem; margin-bottom: 18px; }
+
+.preview-foto {
+    margin-bottom: 16px;
+    min-height: 220px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 0.88rem;
+    overflow: hidden;
+    background: #f8fafc;
+    padding: 10px;
+}
+.preview-foto img {
+    width: 100%; height: auto;
+    border-radius: 10px; display: block;
+}
+
+.btn-camera {
+    display: block; width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: white; border-radius: 12px;
+    font-weight: 700; font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(168,85,247,0.35);
+    transition: 0.15s;
+}
+.btn-camera:active { transform: scale(0.97); }
+.btn-camera input { display: none; }
+
+.grupo-botoes {
+    display: flex; gap: 8px; margin-top: 10px;
+}
+.btn-secundario {
+    flex: 1; padding: 12px;
+    background: #334155; color: white;
+    border-radius: 10px; font-weight: 700;
+    font-size: 0.85rem; cursor: pointer;
+    text-align: center;
+}
+.btn-secundario input { display: none; }
+
+.btn-baixar, .btn-limpar {
+    flex: 1; padding: 11px;
+    border: none; border-radius: 10px;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 0.85rem;
+}
+.btn-baixar { background: #10b981; color: white; }
+.btn-limpar { background: #ef4444; color: white; }`,
+            js: `let ultimaFoto = null;
+
+function processarFoto(input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+
+    if (!arquivo.type.startsWith("image/")) {
+        alert("O arquivo selecionado não é uma imagem.");
+        return;
+    }
+
+    const leitor = new FileReader();
+    leitor.onload = function(e) {
+        ultimaFoto = e.target.result;
+        document.getElementById("previewFoto").innerHTML =
+            '<img src="' + ultimaFoto + '" alt="Foto capturada">';
+        document.getElementById("acoesCamera").style.display = "flex";
+    };
+    leitor.readAsDataURL(arquivo);
+}
+
+function baixarFoto() {
+    if (!ultimaFoto) return;
+    const a = document.createElement("a");
+    a.href = ultimaFoto;
+    a.download = "foto-" + Date.now() + ".jpg";
+    a.click();
+}
+
+function limparFoto() {
+    ultimaFoto = null;
+    document.getElementById("previewFoto").innerHTML =
+        "<span>Nenhuma foto capturada ainda</span>";
+    document.getElementById("acoesCamera").style.display = "none";
+    document.querySelectorAll('input[type="file"]').forEach(i => i.value = "");
+}`
+        },
+
+        // ==================== 📍 GEOLOCALIZAÇÃO ====================
+        {
+            id: 'geo-atual',
+            nome: 'Localização Atual (GPS)',
+            icone: '📍',
+            categoria: '📍 Geolocalização',
+            responsivo: true,
+            mobile: true,
+            dicas: 'A API <code>navigator.geolocation</code> exige HTTPS ou localhost. No celular, ative o GPS. Use <code>enableHighAccuracy: true</code> para maior precisão.',
+            html: `<div class="card-geo">
+    <h2>📍 Minha Localização</h2>
+    <p>Toque para obter latitude, longitude e precisão.</p>
+
+    <button class="btn-geo" id="btnGeo" onclick="obterLocalizacao()">📡 Obter Localização</button>
+
+    <div class="geo-resultado" id="geoResultado">
+        <p class="vazio">Clique no botão acima</p>
+    </div>
+
+    <div class="grupo-botoes" id="acoesGeo" style="display:none;">
+        <button class="btn-copiar" onclick="copiarCoords()">📋 Copiar</button>
+        <a class="btn-mapa" id="btnMapa" href="#" target="_blank" rel="noopener noreferrer">🗺️ Google Maps</a>
+    </div>
+</div>`,
+            css: `.card-geo {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    text-align: center;
+}
+.card-geo h2 { color: #7c3aed; margin-bottom: 6px; }
+.card-geo > p { color: #64748b; font-size: 0.9rem; margin-bottom: 18px; }
+
+.btn-geo {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: white; border: none;
+    border-radius: 12px; font-weight: 700;
+    font-size: 0.95rem; cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 20px rgba(124,58,237,0.35);
+}
+.btn-geo:active { transform: scale(0.97); }
+.btn-geo:disabled { opacity: 0.6; cursor: wait; }
+
+.geo-resultado {
+    margin: 18px 0; padding: 16px;
+    background: #f8fafc; border-radius: 12px;
+    border: 2px dashed #cbd5e1;
+    min-height: 100px;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    font-size: 0.88rem; color: #334155;
+    text-align: left;
+}
+.geo-resultado .vazio { color: #94a3b8; text-align: center; width: 100%; }
+.geo-resultado .linha { padding: 3px 0; }
+.geo-resultado strong { color: #7c3aed; }
+
+.grupo-botoes { display: flex; gap: 8px; }
+.btn-copiar, .btn-mapa {
+    flex: 1; padding: 11px;
+    border: none; border-radius: 10px;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 0.85rem;
+    text-decoration: none; text-align: center;
+    display: block;
+}
+.btn-copiar { background: #10b981; color: white; }
+.btn-mapa { background: #0ea5e9; color: white; }`,
+            js: `let coordsAtuais = null;
+
+function obterLocalizacao() {
+    const btn = document.getElementById("btnGeo");
+    const res = document.getElementById("geoResultado");
+    const acoes = document.getElementById("acoesGeo");
+
+    if (!navigator.geolocation) {
+        res.innerHTML = '<span style="color:#ef4444;">❌ Geolocalização não suportada</span>';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "⏳ Obtendo...";
+    res.innerHTML = '<span class="vazio">Aguardando permissão do GPS...</span>';
+
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            coordsAtuais = {
+                lat: pos.coords.latitude.toFixed(6),
+                lon: pos.coords.longitude.toFixed(6),
+                acc: pos.coords.accuracy.toFixed(0)
+            };
+            res.innerHTML =
+                '<div class="linha"><strong>Latitude:</strong> ' + coordsAtuais.lat + '</div>' +
+                '<div class="linha"><strong>Longitude:</strong> ' + coordsAtuais.lon + '</div>' +
+                '<div class="linha"><strong>Precisão:</strong> ±' + coordsAtuais.acc + ' metros</div>';
+
+            document.getElementById("btnMapa").href =
+                "https://www.google.com/maps?q=" + coordsAtuais.lat + "," + coordsAtuais.lon;
+            acoes.style.display = "flex";
+
+            btn.disabled = false;
+            btn.innerText = "📡 Atualizar Localização";
+        },
+        function(erro) {
+            let msg = "Erro desconhecido.";
+            if (erro.code === 1) msg = "Permissão negada pelo usuário.";
+            if (erro.code === 2) msg = "Posição indisponível.";
+            if (erro.code === 3) msg = "Tempo esgotado.";
+            res.innerHTML = '<span style="color:#ef4444;">❌ ' + msg + '</span>';
+            btn.disabled = false;
+            btn.innerText = "📡 Tentar Novamente";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+}
+
+function copiarCoords() {
+    if (!coordsAtuais) return;
+    const texto = coordsAtuais.lat + ", " + coordsAtuais.lon;
+    navigator.clipboard.writeText(texto).then(() => {
+        alert("📋 Coordenadas copiadas!");
+    });
+}`
+        },
+        {
+            id: 'geo-distancia',
+            nome: 'Calcular Distância entre Pontos',
+            icone: '📏',
+            categoria: '📍 Geolocalização',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Usa a <strong>Fórmula de Haversine</strong> para calcular a distância em km entre duas coordenadas. Útil para apps de entrega, check-in e proximidade.',
+            html: `<div class="card-dist">
+    <h2>📏 Calculadora de Distância</h2>
+    <p>Informe dois pontos e veja a distância em km.</p>
+
+    <div class="ponto">
+        <h4>📍 Ponto A</h4>
+        <input type="number" id="latA" placeholder="Latitude" step="any" value="-21.7642">
+        <input type="number" id="lonA" placeholder="Longitude" step="any" value="-43.3502">
+    </div>
+
+    <div class="ponto">
+        <h4>📍 Ponto B</h4>
+        <input type="number" id="latB" placeholder="Latitude" step="any" value="-23.5505">
+        <input type="number" id="lonB" placeholder="Longitude" step="any" value="-46.6333">
+    </div>
+
+    <button class="btn-calcular" onclick="calcularDistancia()">📐 Calcular Distância</button>
+    <button class="btn-usar-gps" onclick="usarMinhaLocalizacao()">📡 Usar Minha Localização como Ponto A</button>
+
+    <div class="resultado-dist" id="resultadoDist">
+        <span class="vazio">Informe as coordenadas e clique em calcular</span>
+    </div>
+</div>`,
+            css: `.card-dist {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.card-dist h2 { color: #7c3aed; margin-bottom: 6px; text-align: center; }
+.card-dist > p { color: #64748b; font-size: 0.9rem; margin-bottom: 18px; text-align: center; }
+
+.ponto {
+    background: #f8fafc; padding: 12px;
+    border-radius: 10px; margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+}
+.ponto h4 { color: #334155; font-size: 0.88rem; margin-bottom: 8px; }
+.ponto input {
+    width: 100%; padding: 10px 12px; margin-bottom: 6px;
+    border: 2px solid #e2e8f0; border-radius: 8px;
+    font-size: 0.88rem; font-family: inherit;
+}
+.ponto input:focus { outline: none; border-color: #a855f7; }
+
+.btn-calcular, .btn-usar-gps {
+    width: 100%; padding: 13px; margin-top: 6px;
+    border: none; border-radius: 10px;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 0.9rem;
+}
+.btn-calcular { background: #7c3aed; color: white; }
+.btn-usar-gps { background: #e0f2fe; color: #0369a1; font-size: 0.85rem; }
+
+.resultado-dist {
+    margin-top: 16px; padding: 18px;
+    background: #f5f3ff; border-radius: 12px;
+    border: 2px solid #ddd6fe;
+    text-align: center; color: #5b21b6;
+    font-size: 0.95rem; font-weight: 600;
+    min-height: 70px;
+    display: flex; align-items: center; justify-content: center;
+}
+.vazio { color: #94a3b8; font-weight: 400; font-size: 0.85rem; }`,
+            js: `function calcularDistancia() {
+    const latA = parseFloat(document.getElementById("latA").value);
+    const lonA = parseFloat(document.getElementById("lonA").value);
+    const latB = parseFloat(document.getElementById("latB").value);
+    const lonB = parseFloat(document.getElementById("lonB").value);
+    const res = document.getElementById("resultadoDist");
+
+    if ([latA, lonA, latB, lonB].some(v => isNaN(v))) {
+        res.innerHTML = '<span style="color:#ef4444;">❌ Preencha todas as coordenadas</span>';
+        return;
+    }
+
+    const R = 6371;
+    const dLat = (latB - latA) * Math.PI / 180;
+    const dLon = (lonB - lonA) * Math.PI / 180;
+    const a = Math.sin(dLat/2) ** 2 +
+              Math.cos(latA * Math.PI/180) * Math.cos(latB * Math.PI/180) *
+              Math.sin(dLon/2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+
+    res.innerHTML =
+        "📏 Distância: <strong>" + d.toFixed(2) + " km</strong>" +
+        "<br><small style='font-weight:400; color:#7c3aed;'>" +
+        d.toFixed(0) + " metros</small>";
+}
+
+function usarMinhaLocalizacao() {
+    if (!navigator.geolocation) {
+        alert("Geolocalização não suportada.");
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            document.getElementById("latA").value = pos.coords.latitude.toFixed(6);
+            document.getElementById("lonA").value = pos.coords.longitude.toFixed(6);
+            calcularDistancia();
+        },
+        function() {
+            alert("Não foi possível obter sua localização.");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}`
+        },
+
+        // ==================== 💬 WHATSAPP ====================
+        {
+            id: 'whatsapp-link',
+            nome: 'Acionar WhatsApp (Link Direto)',
+            icone: '💬',
+            categoria: '💬 WhatsApp & SMS',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Use a API <code>https://wa.me/NUMERO?text=MENSAGEM</code>. O número deve incluir código do país (ex: 55 para Brasil) e DDD, sem espaços ou traços.',
+            html: `<div class="card-zap">
+    <h2>💬 Enviar WhatsApp</h2>
+    <p>Edite os campos e toque no botão verde.</p>
+
+    <label>Número (com DDI + DDD)</label>
+    <input type="tel" id="zapNumero" placeholder="5532999999999" value="5532999999999" inputmode="numeric">
+
+    <label>Mensagem</label>
+    <textarea id="zapMensagem" rows="4" placeholder="Digite sua mensagem...">Olá! Vim pelo site e gostaria de mais informações.</textarea>
+
+    <button class="btn-zap" onclick="abrirWhatsApp()">💬 Abrir WhatsApp</button>
+
+    <div class="resultado-zap" id="resultadoZap">
+        <span class="vazio">O link gerado aparecerá aqui</span>
+    </div>
+</div>`,
+            css: `.card-zap {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.card-zap h2 { color: #25D366; margin-bottom: 6px; }
+.card-zap > p { color: #64748b; font-size: 0.9rem; margin-bottom: 16px; }
+
+.card-zap label {
+    display: block; font-size: 0.82rem;
+    font-weight: 700; color: #334155;
+    margin: 12px 0 4px;
+}
+.card-zap input, .card-zap textarea {
+    width: 100%; padding: 12px 14px;
+    border: 2px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; font-family: inherit;
+    resize: vertical;
+}
+.card-zap input:focus, .card-zap textarea:focus {
+    outline: none; border-color: #25D366;
+}
+
+.btn-zap {
+    width: 100%; padding: 15px; margin-top: 14px;
+    background: #25D366; color: white;
+    border: none; border-radius: 12px;
+    font-weight: 800; font-size: 1rem;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 8px 20px rgba(37,211,102,0.35);
+}
+.btn-zap:active { transform: scale(0.97); }
+
+.resultado-zap {
+    margin-top: 12px; padding: 12px;
+    background: #f0fdf4; border-radius: 10px;
+    border: 1px solid #86efac;
+    font-size: 0.75rem; color: #166534;
+    word-break: break-all; line-height: 1.5;
+    min-height: 40px;
+}
+.vazio { color: #94a3b8; font-style: italic; }`,
+            js: `function abrirWhatsApp() {
+    const numero = document.getElementById("zapNumero").value.replace(/\\D/g, "");
+    const msg = document.getElementById("zapMensagem").value;
+    const res = document.getElementById("resultadoZap");
+
+    if (!numero) {
+        alert("Digite o número do WhatsApp.");
+        return;
+    }
+
+    const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(msg);
+
+    res.innerHTML = "✅ <strong>Link gerado:</strong><br>" + url;
+
+    window.open(url, "_blank");
+}`
+        },
+        {
+            id: 'whatsapp-flutuante',
+            nome: 'Botão Flutuante de WhatsApp',
+            icone: '🟢',
+            categoria: '💬 WhatsApp & SMS',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Botão fixo no canto inferior direito, ideal para sites de vendas e suporte. Personalize o número e a mensagem padrão no <code>href</code>.',
+            html: `<div class="site-exemplo">
+    <h2>🛍️ Loja Exemplo</h2>
+    <p>Clique no botão verde no canto para falar conosco.</p>
+
+    <div class="produto-ex">
+        <img src="https://picsum.photos/id/20/200/150" alt="Produto">
+        <div>
+            <h3>Fone Bluetooth</h3>
+            <p class="preco-ex">R$ 89,90</p>
+        </div>
+    </div>
+
+    <a class="btn-zap-flutuante"
+       href="https://wa.me/5532999999999?text=Ol%C3%A1!%20Tenho%20interesse%20no%20Fone%20Bluetooth."
+       target="_blank" rel="noopener noreferrer">
+        💬
+    </a>
+</div>`,
+            css: `.site-exemplo {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 30px 24px 80px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    text-align: center; position: relative;
+}
+.site-exemplo h2 { color: #1e293b; margin-bottom: 6px; }
+.site-exemplo > p { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
+
+.produto-ex {
+    display: flex; gap: 14px; align-items: center;
+    background: #f8fafc; padding: 14px; border-radius: 12px;
+    text-align: left;
+}
+.produto-ex img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; }
+.produto-ex h3 { color: #1e293b; font-size: 1rem; }
+.preco-ex { color: #7c3aed; font-weight: 800; font-size: 1.1rem; }
+
+.btn-zap-flutuante {
+    position: fixed; bottom: 90px; right: 24px;
+    width: 60px; height: 60px;
+    background: #25D366; color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; text-decoration: none;
+    box-shadow: 0 8px 22px rgba(37,211,102,0.5);
+    z-index: 999;
+    transition: 0.2s;
+}
+.btn-zap-flutuante:hover {
+    transform: scale(1.1) translateY(-3px);
+    box-shadow: 0 12px 28px rgba(37,211,102,0.7);
+}`,
+            js: `// Botão flutuante é um link direto — sem JS necessário.
+// Personalize o número e o texto no atributo href.`
+        },
+        {
+            id: 'sms-link',
+            nome: 'Enviar SMS',
+            icone: '📩',
+            categoria: '💬 WhatsApp & SMS',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Use <code>sms:numero?body=texto</code>. No iOS, o separador é <code>&amp;body=</code>. O código detecta automaticamente pelo user agent.',
+            html: `<div class="card-sms">
+    <h2>📩 Enviar SMS</h2>
+    <p>Configure o número e a mensagem.</p>
+
+    <label>Número (com DDD)</label>
+    <input type="tel" id="smsNumero" placeholder="32999999999" value="32999999999" inputmode="numeric">
+
+    <label>Mensagem</label>
+    <textarea id="smsMensagem" rows="4" placeholder="Digite sua mensagem...">Olá! Vim pelo site.</textarea>
+
+    <button class="btn-sms" onclick="enviarSMS()">📩 Abrir App de SMS</button>
+
+    <div class="resultado-sms" id="resultadoSms">
+        <span class="vazio">O link SMS aparecerá aqui</span>
+    </div>
+</div>`,
+            css: `.card-sms {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.card-sms h2 { color: #0ea5e9; margin-bottom: 6px; }
+.card-sms > p { color: #64748b; font-size: 0.9rem; margin-bottom: 16px; }
+
+.card-sms label {
+    display: block; font-size: 0.82rem;
+    font-weight: 700; color: #334155;
+    margin: 12px 0 4px;
+}
+.card-sms input, .card-sms textarea {
+    width: 100%; padding: 12px 14px;
+    border: 2px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; font-family: inherit;
+    resize: vertical;
+}
+.card-sms input:focus, .card-sms textarea:focus {
+    outline: none; border-color: #0ea5e9;
+}
+
+.btn-sms {
+    width: 100%; padding: 15px; margin-top: 14px;
+    background: #0ea5e9; color: white;
+    border: none; border-radius: 12px;
+    font-weight: 800; font-size: 1rem;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 8px 20px rgba(14,165,233,0.35);
+}
+.btn-sms:active { transform: scale(0.97); }
+
+.resultado-sms {
+    margin-top: 12px; padding: 12px;
+    background: #f0f9ff; border-radius: 10px;
+    border: 1px solid #7dd3fc;
+    font-size: 0.75rem; color: #075985;
+    word-break: break-all; line-height: 1.5;
+    min-height: 40px;
+}
+.vazio { color: #94a3b8; font-style: italic; }`,
+            js: `function enviarSMS() {
+    const numero = document.getElementById("smsNumero").value.replace(/\\D/g, "");
+    const msg = document.getElementById("smsMensagem").value;
+    const res = document.getElementById("resultadoSms");
+
+    if (!numero) {
+        alert("Digite o número para SMS.");
+        return;
+    }
+
+    const ehIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const sep = ehIOS ? "&" : "?";
+    const url = "sms:" + numero + sep + "body=" + encodeURIComponent(msg);
+
+    res.innerHTML = "✅ <strong>Link SMS:</strong><br>" + url;
+
+    window.location.href = url;
+}`
+        },
+
+        // ==================== 📤 COMPARTILHAR ====================
+        {
+            id: 'share-nativo',
+            nome: 'Compartilhar (Web Share API)',
+            icone: '📤',
+            categoria: '📤 Compartilhar',
+            responsivo: true,
+            mobile: true,
+            dicas: 'A <strong>Web Share API</strong> abre o menu nativo do celular (WhatsApp, Telegram, e-mail...). Verifique suporte com <code>navigator.share</code>. Requer HTTPS.',
+            html: `<div class="card-share">
+    <h2>📤 Compartilhar</h2>
+    <p>Personalize e compartilhe com qualquer app do celular.</p>
+
+    <label>Título</label>
+    <input type="text" id="shareTitulo" value="Promoção Especial">
+
+    <label>Texto</label>
+    <textarea id="shareTexto" rows="3">Aproveite 30% de desconto em todos os produtos!</textarea>
+
+    <label>URL (opcional)</label>
+    <input type="url" id="shareUrl" placeholder="https://seusite.com">
+
+    <button class="btn-share" onclick="compartilhar()">📤 Compartilhar Agora</button>
+
+    <div class="resultado-share" id="resultadoShare">
+        <span class="vazio">Aguardando ação</span>
+    </div>
+</div>`,
+            css: `.card-share {
+    max-width: 420px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.card-share h2 { color: #7c3aed; margin-bottom: 6px; }
+.card-share > p { color: #64748b; font-size: 0.9rem; margin-bottom: 16px; }
+
+.card-share label {
+    display: block; font-size: 0.82rem;
+    font-weight: 700; color: #334155;
+    margin: 12px 0 4px;
+}
+.card-share input, .card-share textarea {
+    width: 100%; padding: 12px 14px;
+    border: 2px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; font-family: inherit;
+    resize: vertical;
+}
+.card-share input:focus, .card-share textarea:focus {
+    outline: none; border-color: #a855f7;
+}
+
+.btn-share {
+    width: 100%; padding: 15px; margin-top: 14px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: white; border: none; border-radius: 12px;
+    font-weight: 800; font-size: 1rem;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 8px 20px rgba(124,58,237,0.35);
+}
+.btn-share:active { transform: scale(0.97); }
+
+.resultado-share {
+    margin-top: 12px; padding: 12px;
+    background: #f5f3ff; border-radius: 10px;
+    border: 1px solid #ddd6fe;
+    font-size: 0.82rem; color: #5b21b6;
+    min-height: 40px;
+}
+.vazio { color: #94a3b8; font-style: italic; }`,
+            js: `function compartilhar() {
+    const res = document.getElementById("resultadoShare");
+
+    if (!navigator.share) {
+        res.innerHTML = '<span style="color:#f59e0b;">⚠️ Seu navegador não suporta compartilhamento nativo. Use HTTPS.</span>';
+        return;
+    }
+
+    const titulo = document.getElementById("shareTitulo").value.trim();
+    const texto = document.getElementById("shareTexto").value.trim();
+    const url = document.getElementById("shareUrl").value.trim();
+
+    const dados = { title: titulo, text: texto };
+    if (url) dados.url = url;
+
+    navigator.share(dados)
+        .then(() => {
+            res.innerHTML = '<span style="color:#10b981;">✅ Compartilhado com sucesso!</span>';
+        })
+        .catch((erro) => {
+            if (erro.name !== "AbortError") {
+                res.innerHTML = '<span style="color:#ef4444;">❌ Erro: ' + erro.message + '</span>';
+            }
+        });
+}`
+        },
+
+        // ==================== 🚀 FLUXO COMPLETO ====================
+        {
+            id: 'pedido-integrado',
+            nome: 'Pedido Integrado (GPS + WhatsApp)',
+            icone: '🚀',
+            categoria: '🚀 Fluxo Completo',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Exemplo real: cliente preenche nome, pedido, captura GPS e envia tudo por WhatsApp. Campos totalmente personalizáveis em tempo real.',
+            html: `<div class="card-app">
+    <h2>🚀 Pedido com Localização</h2>
+    <p>Preencha, capture o GPS e envie por WhatsApp.</p>
+
+    <label>👤 Seu nome</label>
+    <input type="text" id="appNome" value="João Silva" placeholder="Digite seu nome">
+
+    <label>📝 O que você precisa?</label>
+    <textarea id="appPedido" rows="3" placeholder="Descreva seu pedido...">Quero um fone bluetooth com entrega urgente.</textarea>
+
+    <label>📞 WhatsApp do destino</label>
+    <input type="tel" id="appZap" value="5532999999999" placeholder="5532999999999" inputmode="numeric">
+
+    <button class="btn-local" onclick="capturarGpsApp()">📍 Capturar Minha Localização</button>
+
+    <div class="local-app" id="appGps">
+        <span class="vazio">Localização não capturada</span>
+    </div>
+
+    <button class="btn-enviar" onclick="enviarPedidoZap()">💬 Enviar Pedido por WhatsApp</button>
+    <button class="btn-compartilhar" onclick="compartilharPedido()">📤 Compartilhar Pedido</button>
+
+    <div class="resultado-app" id="resultadoApp">
+        <span class="vazio">Aguardando ação</span>
+    </div>
+</div>`,
+            css: `.card-app {
+    max-width: 440px; margin: 20px auto;
+    background: white; padding: 24px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.card-app h2 { color: #7c3aed; margin-bottom: 6px; text-align: center; }
+.card-app > p { color: #64748b; font-size: 0.9rem; margin-bottom: 16px; text-align: center; }
+
+.card-app label {
+    display: block; font-size: 0.82rem;
+    font-weight: 700; color: #334155;
+    margin: 12px 0 4px;
+}
+.card-app input, .card-app textarea {
+    width: 100%; padding: 12px 14px;
+    border: 2px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; font-family: inherit;
+    resize: vertical;
+}
+.card-app input:focus, .card-app textarea:focus {
+    outline: none; border-color: #a855f7;
+}
+
+.btn-local {
+    width: 100%; padding: 13px; margin-top: 14px;
+    background: #7c3aed; color: white;
+    border: none; border-radius: 10px;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 0.9rem;
+}
+
+.local-app {
+    margin: 12px 0; padding: 12px;
+    background: #f8fafc; border-radius: 10px;
+    border: 2px dashed #cbd5e1;
+    font-size: 0.85rem; color: #334155;
+    text-align: left; min-height: 50px;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.local-app .linha { padding: 2px 0; }
+.local-app strong { color: #7c3aed; }
+.vazio { color: #94a3b8; font-style: italic; text-align: center; }
+
+.btn-enviar {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: #25D366; color: white;
+    border: none; border-radius: 12px;
+    font-weight: 800; cursor: pointer;
+    font-family: inherit; font-size: 1rem;
+    box-shadow: 0 8px 20px rgba(37,211,102,0.35);
+}
+.btn-enviar:active { transform: scale(0.97); }
+
+.btn-compartilhar {
+    width: 100%; padding: 13px; margin-top: 8px;
+    background: #1e293b; color: white;
+    border: none; border-radius: 12px;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 0.9rem;
+}
+
+.resultado-app {
+    margin-top: 12px; padding: 12px;
+    background: #f5f3ff; border-radius: 10px;
+    border: 1px solid #ddd6fe;
+    font-size: 0.82rem; color: #5b21b6;
+    min-height: 40px; line-height: 1.5;
+    word-break: break-word;
+}`,
+            js: `let gpsApp = null;
+
+function capturarGpsApp() {
+    const res = document.getElementById("appGps");
+
+    if (!navigator.geolocation) {
+        res.innerHTML = '<span style="color:#ef4444;">❌ GPS não suportado</span>';
+        return;
+    }
+
+    res.innerHTML = '<span class="vazio">⏳ Obtendo localização...</span>';
+
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            gpsApp = {
+                lat: pos.coords.latitude.toFixed(6),
+                lon: pos.coords.longitude.toFixed(6)
+            };
+            res.innerHTML =
+                '<div class="linha" style="color:#10b981;"><strong>✅ Localização capturada</strong></div>' +
+                '<div class="linha"><strong>Lat:</strong> ' + gpsApp.lat + '</div>' +
+                '<div class="linha"><strong>Lon:</strong> ' + gpsApp.lon + '</div>';
+        },
+        function() {
+            res.innerHTML = '<span style="color:#ef4444;">❌ Não foi possível obter GPS</span>';
+        },
+        { enableHighAccuracy: true, timeout: 12000 }
+    );
+}
+
+function montarMensagem() {
+    const nome = document.getElementById("appNome").value.trim() || "Cliente";
+    const pedido = document.getElementById("appPedido").value.trim() || "Sem descrição";
+    let msg = "Olá! Meu nome é " + nome + ".\\nPedido: " + pedido;
+    if (gpsApp) {
+        msg += "\\nLocalização: https://www.google.com/maps?q=" + gpsApp.lat + "," + gpsApp.lon;
+    }
+    return msg;
+}
+
+function enviarPedidoZap() {
+    const numero = document.getElementById("appZap").value.replace(/\\D/g, "");
+    const res = document.getElementById("resultadoApp");
+
+    if (!numero) {
+        alert("Digite o WhatsApp de destino.");
+        return;
+    }
+
+    const msg = montarMensagem();
+    const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(msg);
+
+    res.innerHTML = "✅ <strong>Link gerado:</strong><br>" + url;
+
+    window.open(url, "_blank");
+}
+
+function compartilharPedido() {
+    const res = document.getElementById("resultadoApp");
+
+    if (!navigator.share) {
+        res.innerHTML = '<span style="color:#f59e0b;">⚠️ Compartilhamento não suportado</span>';
+        return;
+    }
+
+    navigator.share({
+        title: "Meu Pedido",
+        text: montarMensagem()
+    })
+    .then(() => {
+        res.innerHTML = '<span style="color:#10b981;">✅ Pedido compartilhado!</span>';
+    })
+    .catch(() => {});
+}`
+        },
+
+        // ==================== 📚 GUIA ====================
+        {
+            id: 'guia-uso',
+            nome: 'Como Testar no Celular',
+            icone: '📚',
+            categoria: '📚 Guia',
+            responsivo: true,
+            mobile: true,
+            dicas: 'Leia este guia para entender como cada API se comporta no celular e o que exige HTTPS.',
+            html: `<div class="guia-box">
+    <h2>📚 Guia de Uso no Celular</h2>
+    <p class="sub">Como testar cada componente e o que esperar.</p>
+
+    <div class="bloco">
+        <h3>📷 Câmera — funciona sem HTTPS</h3>
+        <p>O <code>&lt;input type="file" capture="environment"&gt;</code> abre o app de câmera nativo do celular. Funciona em HTTP e HTTPS.</p>
+    </div>
+
+    <div class="bloco">
+        <h3>📍 Geolocalização — exige HTTPS</h3>
+        <p>A API <code>navigator.geolocation</code> só funciona em <strong>HTTPS</strong> ou <strong>localhost</strong>. Em HTTP, o navegador bloqueia por segurança.</p>
+    </div>
+
+    <div class="bloco">
+        <h3>💬 WhatsApp — funciona sem HTTPS</h3>
+        <p>O link <code>https://wa.me/...</code> abre o app direto. Não precisa de permissão especial.</p>
+    </div>
+
+    <div class="bloco">
+        <h3>📩 SMS — funciona sem HTTPS</h3>
+        <p>O link <code>sms:numero?body=texto</code> abre o app de SMS nativo. Sem restrições.</p>
+    </div>
+
+    <div class="bloco">
+        <h3>📤 Compartilhar — exige HTTPS</h3>
+        <p>A <code>Web Share API</code> só funciona em HTTPS e em navegadores compatíveis (Chrome Android, Safari iOS).</p>
+    </div>
+
+    <div class="bloco destaque">
+        <h3>🚀 Como testar tudo junto</h3>
+        <p><strong>Opção 1 — Rápida:</strong> salve o arquivo e envie para o celular (Drive, WhatsApp, e-mail). Abra no navegador. Câmera, WhatsApp e SMS funcionam.</p>
+        <p><strong>Opção 2 — Completa:</strong> suba em um servidor HTTPS grátis (Netlify Drop, GitHub Pages, Vercel, ngrok). Assim GPS e Compartilhar também funcionam.</p>
+    </div>
+</div>`,
+            css: `.guia-box {
+    max-width: 600px; margin: 20px auto;
+    background: white; padding: 28px;
+    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.guia-box h2 { color: #1e293b; font-size: 1.4rem; margin-bottom: 6px; }
+.guia-box .sub { color: #64748b; font-size: 0.9rem; margin-bottom: 22px; }
+
+.bloco {
+    padding: 14px 16px; margin-bottom: 12px;
+    background: #f8fafc; border-radius: 10px;
+    border-left: 4px solid #a855f7;
+}
+.bloco h3 { color: #7c3aed; font-size: 0.95rem; margin-bottom: 6px; }
+.bloco p { color: #475569; font-size: 0.86rem; line-height: 1.6; }
+.bloco code {
+    background: #e2e8f0; color: #be185d;
+    padding: 2px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 0.8rem;
+}
+.bloco.destaque {
+    background: #fef3c7; border-left-color: #f59e0b;
+}
+.bloco.destaque h3 { color: #b45309; }
+.bloco.destaque strong { color: #92400e; }`,
+            js: `// Guia estático — sem JS necessário.`
+        }
+    ];
+
+    /* ============================================================
+       RENDERIZAR SIDEBAR
+       ============================================================ */
+    const categorias = [...new Set(COMPONENTES.map(c => c.categoria))];
+    const sidebarNav = document.getElementById('sidebarNav');
+
+    categorias.forEach(cat => {
+        const titulo = document.createElement('div');
+        titulo.className = 'categoria-titulo';
+        titulo.textContent = cat;
+        sidebarNav.appendChild(titulo);
+
+        COMPONENTES.filter(c => c.categoria === cat).forEach(comp => {
+            const btn = document.createElement('button');
+            btn.className = 'sidebar-item';
+            btn.dataset.id = comp.id;
+            btn.innerHTML = `<span class="icone">${comp.icone}</span> ${comp.nome}`;
+            btn.onclick = () => mostrarComponente(comp.id);
+            sidebarNav.appendChild(btn);
+        });
+    });
+
+    /* ============================================================
+       RENDERIZAR COMPONENTE
+       ============================================================ */
+    const conteudoPrincipal = document.getElementById('conteudoPrincipal');
+    let htmlCompletoAtual = '';
+
+    function mostrarComponente(id) {
+        const comp = COMPONENTES.find(c => c.id === id);
+        if (!comp) return;
+
+        document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('ativo'));
+        const btnAtivo = document.querySelector(`.sidebar-item[data-id="${id}"]`);
+        if (btnAtivo) btnAtivo.classList.add('ativo');
+
+        document.getElementById('sidebar').classList.remove('aberta');
+
+        const htmlCompleto = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${comp.nome}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; padding: 16px; }
+${comp.css}
+</style>
+</head>
+<body>
+${comp.html}
+<script>
+${comp.js}
+<\/script>
+</body>
+</html>`;
+
+        htmlCompletoAtual = htmlCompleto;
+
+        conteudoPrincipal.innerHTML = `
+            <div class="main-header">
+                <h1>${comp.icone} ${comp.nome}</h1>
+                <p>Componente híbrido funcional para mobile. Edite os campos no preview ou copie o código.</p>
+                <div class="meta">
+                    <span class="meta-badge categoria">${comp.categoria}</span>
+                    <span class="meta-badge responsive">📱 Responsivo</span>
+                    <span class="meta-badge mobile">📲 Mobile First</span>
+                    <span class="meta-badge">📄 HTML5</span>
+                    <span class="meta-badge">🎨 CSS3</span>
+                    <span class="meta-badge">⚙️ JS Vanilla</span>
+                </div>
+            </div>
+
+            <div class="info-box">
+                💡 <strong>Dica de Implementação:</strong> ${comp.dicas}
+            </div>
+
+            <div class="info-box aviso">
+                ⚠️ <strong>Importante:</strong> Câmera (input file), WhatsApp e SMS funcionam sem HTTPS. Já <strong>GPS</strong> e <strong>Web Share API</strong> exigem <strong>HTTPS</strong> ou <strong>localhost</strong>. Para testar tudo no celular, use Netlify Drop, GitHub Pages ou ngrok.
+            </div>
+
+            <button class="btn-nova-aba" onclick="abrirEmNovaAba()">
+                🚀 Abrir este componente em Nova Aba (testar no celular)
+            </button>
+
+            <div class="preview-wrapper">
+                <div class="preview-header">
+                    <div>
+                        <span class="ponto vermelho"></span>
+                        <span class="ponto amarelo"></span>
+                        <span class="ponto verde"></span>
+                    </div>
+                    <span class="preview-titulo">preview-${comp.id}.html</span>
+                    <span style="width:40px;"></span>
+                </div>
+                <iframe class="preview-iframe" id="previewIframe" allow="camera; microphone; geolocation"></iframe>
+            </div>
+
+            <div class="abas">
+                <button class="aba ativa" onclick="trocarAba(this, 'html')">📄 HTML</button>
+                <button class="aba" onclick="trocarAba(this, 'css')">🎨 CSS</button>
+                <button class="aba" onclick="trocarAba(this, 'js')">⚙️ JS</button>
+                <button class="aba" onclick="trocarAba(this, 'tudo')">📦 Código Completo</button>
+            </div>
+
+            <div class="bloco-codigo ativo" id="aba-html">
+                <button class="btn-copiar" onclick="copiarAba('aba-html', this)">📋 Copiar HTML</button>
+                <pre>${escapeHtml(comp.html)}</pre>
+            </div>
+            <div class="bloco-codigo" id="aba-css">
+                <button class="btn-copiar" onclick="copiarAba('aba-css', this)">📋 Copiar CSS</button>
+                <pre>${escapeHtml(comp.css)}</pre>
+            </div>
+            <div class="bloco-codigo" id="aba-js">
+                <button class="btn-copiar" onclick="copiarAba('aba-js', this)">📋 Copiar JS</button>
+                <pre>${escapeHtml(comp.js)}</pre>
+            </div>
+            <div class="bloco-codigo" id="aba-tudo">
+                <button class="btn-copiar" onclick="copiarAba('aba-tudo', this)">📋 Copiar Tudo</button>
+                <pre>${escapeHtml(htmlCompleto)}</pre>
+            </div>
+        `;
+
+        const iframe = document.getElementById('previewIframe');
+        iframe.srcdoc = htmlCompleto;
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ============================================================
+       ABRIR EM NOVA ABA
+       ============================================================ */
+    function abrirEmNovaAba() {
+        const blob = new Blob([htmlCompletoAtual], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+    }
+
+    /* ============================================================
+       ABAS DE CÓDIGO
+       ============================================================ */
+    function trocarAba(btn, tipo) {
+        document.querySelectorAll('.aba').forEach(b => b.classList.remove('ativa'));
+        document.querySelectorAll('.bloco-codigo').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativa');
+        document.getElementById('aba-' + tipo).classList.add('ativo');
+    }
+
+    function copiarAba(idAba, btn) {
+        const texto = document.getElementById(idAba).querySelector('pre').innerText;
+        navigator.clipboard.writeText(texto).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = '✅ Copiado!';
+            setTimeout(() => btn.textContent = orig, 1800);
+        });
+    }
+
+    function escapeHtml(txt) {
+        return txt
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    /* ============================================================
+       MENU MOBILE
+       ============================================================ */
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('aberta');
+    }
+
+    function voltarAoInicioPrincipal() {
+        document.getElementById('inicioPrincipal').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+    window.addEventListener('scroll', () => {
+        const btn = document.getElementById('btnTopo');
+        if (window.scrollY > 350) {
+            btn.classList.remove('oculto');
+        } else {
+            btn.classList.add('oculto');
+        }
+    });
+
+    /* INICIAR */
+    mostrarComponente(COMPONENTES[0].id);
+</script>
+
+</body>
+</html>
