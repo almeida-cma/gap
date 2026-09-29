@@ -51,6 +51,63 @@
         }
 
         /* ============================================================
+           BOTÃO FLUTUANTE DE MENU (MOBILE)
+           ============================================================ */
+        .btn-menu-flutuante {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            box-shadow: 0 8px 22px rgba(168,85,247,0.55);
+            transition: all 0.25s;
+            z-index: 1400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-menu-flutuante:active {
+            transform: scale(0.92);
+        }
+        .btn-menu-flutuante .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #10b981;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 10px;
+            border: 2px solid #0f172a;
+        }
+
+        /* ============================================================
+           OVERLAY DO MENU
+           ============================================================ */
+        .overlay-menu {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .overlay-menu.ativo {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ============================================================
            SIDEBAR
            ============================================================ */
         .sidebar {
@@ -64,7 +121,8 @@
             top: 0;
             border-right: 1px solid #334155;
             z-index: 100;
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.3);
         }
 
         .sidebar-logo {
@@ -98,11 +156,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
+            padding: 10px 12px;
             margin: 2px 0;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             color: #cbd5e1;
             transition: all 0.15s;
             border: none;
@@ -131,7 +189,7 @@
         .main {
             margin-left: 300px;
             flex: 1;
-            padding: 26px 30px;
+            padding: 26px 30px 100px;
             min-height: 100vh;
             scroll-behavior: smooth;
         }
@@ -222,7 +280,7 @@
 
         .preview-iframe {
             width: 100%;
-            height: 560px;
+            height: 640px;
             border: none;
             background: white;
             display: block;
@@ -349,41 +407,40 @@
         .info-box.aviso strong { color: #fbbf24; }
 
         /* ============================================================
-           BOTÃO MENU MOBILE
-           ============================================================ */
-        .btn-menu-mobile {
-            display: none;
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 200;
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            color: white;
-            border: none;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            cursor: pointer;
-        }
-
-        /* ============================================================
            RESPONSIVO
            ============================================================ */
         @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.aberta { transform: translateX(0); }
-            .main { margin-left: 0; padding: 70px 16px 26px; }
-            .btn-menu-mobile { display: block; }
+            .main { margin-left: 0; padding: 20px 16px 110px; }
+            .btn-menu-flutuante { display: flex; }
             .main-header h1 { font-size: 1.4rem; }
-            .preview-iframe { height: 480px; }
+            .preview-iframe { height: 600px; }
+        }
+
+        /* Ajuste: quando a sidebar está aberta no mobile, o botão flutuante some */
+        @media (max-width: 900px) {
+            .sidebar.aberta ~ .btn-menu-flutuante {
+                opacity: 0;
+                pointer-events: none;
+            }
         }
     </style>
 </head>
 <body>
 
-<button class="btn-menu-mobile" onclick="toggleMenu()" aria-label="Abrir Menu">☰</button>
 <button class="btn-topo oculto" id="btnTopo" onclick="voltarAoInicioPrincipal()" title="Voltar ao início">⬆️</button>
 
+<!-- BOTÃO FLUTUANTE DE MENU (MOBILE) -->
+<button class="btn-menu-flutuante" id="btnMenuFlutuante" onclick="toggleMenu()" aria-label="Abrir menu de navegação">
+    ☰
+    <span class="badge" id="badgeTotal">8</span>
+</button>
+
+<!-- OVERLAY -->
+<div class="overlay-menu" id="overlayMenu" onclick="fecharMenu()"></div>
+
+<!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">📱 Biblioteca Híbrida</div>
     <div class="sidebar-sub">Web APIs para Mobile</div>
@@ -407,14 +464,10 @@
             categoria: '📷 Câmera',
             responsivo: true,
             mobile: true,
-            dicas: 'Use <code>accept="image/*"</code> e <code>capture="environment"</code> para abrir a câmera traseira no celular. Troque <code>environment</code> por <code>user</code> para a câmera frontal. O preview usa <code>FileReader</code> para exibir a imagem localmente.',
+            dicas: 'Use <code>accept="image/*"</code> e <code>capture="environment"</code> para abrir a câmera traseira no celular. Troque <code>environment</code> por <code>user</code> para a câmera frontal. A foto capturada aparece automaticamente na área de download abaixo.',
             html: `<div class="card-camera">
     <h2>📷 Tirar Foto</h2>
     <p>Toque no botão para abrir a câmera do celular.</p>
-
-    <div class="preview-foto" id="previewFoto">
-        <span>Nenhuma foto capturada ainda</span>
-    </div>
 
     <label class="btn-camera">
         📸 Abrir Câmera Traseira
@@ -432,35 +485,48 @@
         </label>
     </div>
 
-    <div class="grupo-botoes" id="acoesCamera" style="display:none;">
-        <button class="btn-baixar" onclick="baixarFoto()">💾 Baixar Foto</button>
-        <button class="btn-limpar" onclick="limparFoto()">🗑️ Limpar</button>
+    <!-- ÁREA DE DOWNLOAD DA FOTO CAPTURADA -->
+    <div class="area-download" id="areaDownload">
+        <div class="download-vazio" id="downloadVazio">
+            <span class="icone-vazio">📥</span>
+            <p>A foto capturada aparecerá aqui</p>
+            <small>Pronta para download</small>
+        </div>
+
+        <div class="download-ativo" id="downloadAtivo" style="display:none;">
+            <div class="foto-preview-box">
+                <img id="fotoPreview" src="" alt="Foto capturada">
+            </div>
+
+            <div class="info-foto" id="infoFoto">
+                <span class="chip-info" id="chipNome">foto.jpg</span>
+                <span class="chip-info" id="chipTamanho">0 KB</span>
+                <span class="chip-info" id="chipData">--/--/----</span>
+            </div>
+
+            <div class="acoes-download">
+                <button class="btn-baixar-grande" onclick="baixarFoto()">
+                    💾 Baixar Foto
+                </button>
+                <button class="btn-nova-foto" onclick="novaFoto()">
+                    📸 Nova Foto
+                </button>
+            </div>
+
+            <button class="btn-limpar-pequeno" onclick="limparFoto()">
+                🗑️ Limpar
+            </button>
+        </div>
     </div>
 </div>`,
             css: `.card-camera {
-    max-width: 420px; margin: 20px auto;
+    max-width: 460px; margin: 20px auto;
     background: white; padding: 24px;
     border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
     text-align: center;
 }
 .card-camera h2 { color: #7c3aed; margin-bottom: 6px; }
 .card-camera > p { color: #64748b; font-size: 0.9rem; margin-bottom: 18px; }
-
-.preview-foto {
-    margin-bottom: 16px;
-    min-height: 220px;
-    border: 2px dashed #cbd5e1;
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    color: #94a3b8; font-size: 0.88rem;
-    overflow: hidden;
-    background: #f8fafc;
-    padding: 10px;
-}
-.preview-foto img {
-    width: 100%; height: auto;
-    border-radius: 10px; display: block;
-}
 
 .btn-camera {
     display: block; width: 100%;
@@ -487,15 +553,121 @@
 }
 .btn-secundario input { display: none; }
 
-.btn-baixar, .btn-limpar {
-    flex: 1; padding: 11px;
-    border: none; border-radius: 10px;
-    font-weight: 700; cursor: pointer;
-    font-family: inherit; font-size: 0.85rem;
+/* ============================================================
+   ÁREA DE DOWNLOAD
+   ============================================================ */
+.area-download {
+    margin-top: 22px;
+    padding: 18px;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    min-height: 200px;
+    transition: 0.2s;
 }
-.btn-baixar { background: #10b981; color: white; }
-.btn-limpar { background: #ef4444; color: white; }`,
-            js: `let ultimaFoto = null;
+.area-download.tem-foto {
+    border-style: solid;
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.download-vazio {
+    padding: 40px 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+.download-vazio .icone-vazio {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.6;
+}
+.download-vazio p {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #64748b;
+}
+.download-vazio small {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+.download-ativo {
+    text-align: center;
+}
+
+.foto-preview-box {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    background: #0f172a;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+.foto-preview-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 380px;
+    object-fit: contain;
+}
+
+.info-foto {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+.chip-info {
+    background: white;
+    color: #334155;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+}
+
+.acoes-download {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.btn-baixar-grande {
+    flex: 2;
+    padding: 15px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white; border: none;
+    border-radius: 12px;
+    font-weight: 800; font-size: 0.95rem;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 8px 20px rgba(16,185,129,0.35);
+}
+.btn-baixar-grande:active { transform: scale(0.97); }
+
+.btn-nova-foto {
+    flex: 1;
+    padding: 15px;
+    background: #a855f7; color: white;
+    border: none; border-radius: 12px;
+    font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; font-family: inherit;
+}
+
+.btn-limpar-pequeno {
+    width: 100%;
+    padding: 9px;
+    background: transparent;
+    color: #ef4444;
+    border: 2px solid #fecaca;
+    border-radius: 10px;
+    font-weight: 700; font-size: 0.8rem;
+    cursor: pointer; font-family: inherit;
+}
+.btn-limpar-pequeno:hover { background: #fef2f2; }`,
+            js: `let fotoAtual = null;
 
 function processarFoto(input) {
     const arquivo = input.files[0];
@@ -508,27 +680,54 @@ function processarFoto(input) {
 
     const leitor = new FileReader();
     leitor.onload = function(e) {
-        ultimaFoto = e.target.result;
-        document.getElementById("previewFoto").innerHTML =
-            '<img src="' + ultimaFoto + '" alt="Foto capturada">';
-        document.getElementById("acoesCamera").style.display = "flex";
+        fotoAtual = e.target.result;
+
+        // Atualiza a área de download
+        document.getElementById("fotoPreview").src = fotoAtual;
+        document.getElementById("downloadVazio").style.display = "none";
+        document.getElementById("downloadAtivo").style.display = "block";
+        document.getElementById("areaDownload").classList.add("tem-foto");
+
+        // Info da foto
+        const data = new Date();
+        const dataStr = data.toLocaleDateString("pt-BR") + " " +
+                        data.toLocaleTimeString("pt-BR").slice(0,5);
+        const tamanhoKB = (arquivo.size / 1024).toFixed(1) + " KB";
+
+        document.getElementById("chipNome").innerText = "📄 " + (arquivo.name || "foto.jpg");
+        document.getElementById("chipTamanho").innerText = "📦 " + tamanhoKB;
+        document.getElementById("chipData").innerText = "🕒 " + dataStr;
+
+        // Scroll suave até a área de download
+        document.getElementById("areaDownload").scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
     };
     leitor.readAsDataURL(arquivo);
 }
 
 function baixarFoto() {
-    if (!ultimaFoto) return;
+    if (!fotoAtual) return;
     const a = document.createElement("a");
-    a.href = ultimaFoto;
+    a.href = fotoAtual;
     a.download = "foto-" + Date.now() + ".jpg";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+}
+
+function novaFoto() {
+    document.querySelectorAll('input[type="file"]').forEach(i => i.value = "");
+    document.querySelector('.btn-camera input').click();
 }
 
 function limparFoto() {
-    ultimaFoto = null;
-    document.getElementById("previewFoto").innerHTML =
-        "<span>Nenhuma foto capturada ainda</span>";
-    document.getElementById("acoesCamera").style.display = "none";
+    fotoAtual = null;
+    document.getElementById("fotoPreview").src = "";
+    document.getElementById("downloadVazio").style.display = "block";
+    document.getElementById("downloadAtivo").style.display = "none";
+    document.getElementById("areaDownload").classList.remove("tem-foto");
     document.querySelectorAll('input[type="file"]').forEach(i => i.value = "");
 }`
         },
@@ -776,7 +975,7 @@ function usarMinhaLocalizacao() {
 }`
         },
 
-        // ==================== 💬 WHATSAPP ====================
+        // ==================== 💬 WHATSAPP & SMS ====================
         {
             id: 'whatsapp-link',
             nome: 'Acionar WhatsApp (Link Direto)',
@@ -859,68 +1058,6 @@ function usarMinhaLocalizacao() {
 
     window.open(url, "_blank");
 }`
-        },
-        {
-            id: 'whatsapp-flutuante',
-            nome: 'Botão Flutuante de WhatsApp',
-            icone: '🟢',
-            categoria: '💬 WhatsApp & SMS',
-            responsivo: true,
-            mobile: true,
-            dicas: 'Botão fixo no canto inferior direito, ideal para sites de vendas e suporte. Personalize o número e a mensagem padrão no <code>href</code>.',
-            html: `<div class="site-exemplo">
-    <h2>🛍️ Loja Exemplo</h2>
-    <p>Clique no botão verde no canto para falar conosco.</p>
-
-    <div class="produto-ex">
-        <img src="https://picsum.photos/id/20/200/150" alt="Produto">
-        <div>
-            <h3>Fone Bluetooth</h3>
-            <p class="preco-ex">R$ 89,90</p>
-        </div>
-    </div>
-
-    <a class="btn-zap-flutuante"
-       href="https://wa.me/5532999999999?text=Ol%C3%A1!%20Tenho%20interesse%20no%20Fone%20Bluetooth."
-       target="_blank" rel="noopener noreferrer">
-        💬
-    </a>
-</div>`,
-            css: `.site-exemplo {
-    max-width: 420px; margin: 20px auto;
-    background: white; padding: 30px 24px 80px;
-    border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    text-align: center; position: relative;
-}
-.site-exemplo h2 { color: #1e293b; margin-bottom: 6px; }
-.site-exemplo > p { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
-
-.produto-ex {
-    display: flex; gap: 14px; align-items: center;
-    background: #f8fafc; padding: 14px; border-radius: 12px;
-    text-align: left;
-}
-.produto-ex img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; }
-.produto-ex h3 { color: #1e293b; font-size: 1rem; }
-.preco-ex { color: #7c3aed; font-weight: 800; font-size: 1.1rem; }
-
-.btn-zap-flutuante {
-    position: fixed; bottom: 90px; right: 24px;
-    width: 60px; height: 60px;
-    background: #25D366; color: white;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.8rem; text-decoration: none;
-    box-shadow: 0 8px 22px rgba(37,211,102,0.5);
-    z-index: 999;
-    transition: 0.2s;
-}
-.btn-zap-flutuante:hover {
-    transform: scale(1.1) translateY(-3px);
-    box-shadow: 0 12px 28px rgba(37,211,102,0.7);
-}`,
-            js: `// Botão flutuante é um link direto — sem JS necessário.
-// Personalize o número e o texto no atributo href.`
         },
         {
             id: 'sms-link',
@@ -1299,7 +1436,7 @@ function compartilharPedido() {
 
     <div class="bloco">
         <h3>📷 Câmera — funciona sem HTTPS</h3>
-        <p>O <code>&lt;input type="file" capture="environment"&gt;</code> abre o app de câmera nativo do celular. Funciona em HTTP e HTTPS.</p>
+        <p>O <code>&lt;input type="file" capture="environment"&gt;</code> abre o app de câmera nativo do celular. A foto capturada vai direto para uma área de download.</p>
     </div>
 
     <div class="bloco">
@@ -1379,6 +1516,9 @@ function compartilharPedido() {
         });
     });
 
+    // Atualiza o badge do botão flutuante com o total
+    document.getElementById('badgeTotal').textContent = COMPONENTES.length;
+
     /* ============================================================
        RENDERIZAR COMPONENTE
        ============================================================ */
@@ -1393,7 +1533,8 @@ function compartilharPedido() {
         const btnAtivo = document.querySelector(`.sidebar-item[data-id="${id}"]`);
         if (btnAtivo) btnAtivo.classList.add('ativo');
 
-        document.getElementById('sidebar').classList.remove('aberta');
+        // Fecha o menu mobile automaticamente ao escolher
+        fecharMenu();
 
         const htmlCompleto = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1523,10 +1664,31 @@ ${comp.js}
     }
 
     /* ============================================================
-       MENU MOBILE
+       MENU MOBILE (BOTÃO FLUTUANTE + OVERLAY)
        ============================================================ */
     function toggleMenu() {
-        document.getElementById('sidebar').classList.toggle('aberta');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlayMenu');
+        const btnFlutuante = document.getElementById('btnMenuFlutuante');
+
+        const estaAberto = sidebar.classList.contains('aberta');
+
+        if (estaAberto) {
+            sidebar.classList.remove('aberta');
+            overlay.classList.remove('ativo');
+            btnFlutuante.innerHTML = '☰ <span class="badge" id="badgeTotal">' + COMPONENTES.length + '</span>';
+        } else {
+            sidebar.classList.add('aberta');
+            overlay.classList.add('ativo');
+            btnFlutuante.innerHTML = '✕';
+        }
+    }
+
+    function fecharMenu() {
+        document.getElementById('sidebar').classList.remove('aberta');
+        document.getElementById('overlayMenu').classList.remove('ativo');
+        document.getElementById('btnMenuFlutuante').innerHTML =
+            '☰ <span class="badge" id="badgeTotal">' + COMPONENTES.length + '</span>';
     }
 
     function voltarAoInicioPrincipal() {
